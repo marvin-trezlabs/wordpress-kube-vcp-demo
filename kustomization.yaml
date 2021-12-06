@@ -1,0 +1,17 @@
+# kustomization.yaml for secrets
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: wp-app
+
+secretGenerator:
+  # Generate secret from env file
+  - name: db-secret
+    env: .env
+    type: Opaque
+generatorOptions:
+  disableNameSuffixHash: true
+
+resources:
+  - mysql.yaml
+  - wordpress.yaml

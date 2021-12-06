@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  ports:
+  - port: 3306
+  selector:
+    app: mysql
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - image: mysql:5.6
+        name: mysql
+        env:
+          # Use secret in real usage
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-secret
+              key: mysql-root-password
+        ports:
+        - containerPort: 3306
+          name: mysql
+        volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: mysql-pv-claim
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: mysql-pv-claim
+  labels:
+    app: mysql
+spec:
+  # in this demo we use GCP so we are using the 'standard' StorageClass
+  # We can of course define our own StorageClass resource
+  storageClassName: standard
+
+  # The access modes are:
+  #   ReadWriteOnce - The volume can be mounted as read-write by a single node
+  #   ReadWriteMany - The volume can be mounted as read-write by a many node
+  #   ReadOnlyMany  - The volume can be mounted as read-only  by many nodes
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
